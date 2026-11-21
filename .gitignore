@@ -1,2 +1,13 @@
 .venv
 .env
+*.gguf
+__pycache__/
+*.py[cod]
+.cache/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/

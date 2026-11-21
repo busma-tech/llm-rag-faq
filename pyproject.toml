@@ -1,23 +1,103 @@
 [project]
 name = "llm-rag-faq"
 version = "0.1.0"
-description = "Add your description here"
+description = "Hybrid lexical + semantic FAQ RAG assistant supporting local GGUF models and Anthropic Claude"
 readme = "README.md"
 authors = [
     { name = "Gheorghe Busmachiu", email = "102289089+busma-tech@users.noreply.github.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "anthropic>=2.10.0",
     "jupyter>=1.1.1",
     "minsearch>=0.2.0",
     "python-dotenv>=1.2.4",
     "requests>=2.34.2",
+    "llama-cpp-python",
+    "huggingface-hub",
+    "fastembed",
+    "numpy",
 ]
 
 [project.scripts]
-llm-rag-faq = "llm_rag_faq:main"
+llm-rag-faq = "llm_rag_faq.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.9,<0.14.0"]
 build-backend = "uv_build"
+
+[[tool.uv.index]]
+name = "llama-cpp-cpu"
+url = "https://abetlen.github.io/llama-cpp-python/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+llama-cpp-python = { index = "llama-cpp-cpu" }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "import-linter>=2.1",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S", "RUF"]
+ignore = ["S101"]  # allow assert in tests (scoped via per-file-ignores)
+allowed-confusables = ["—"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+
+[tool.importlinter]
+root_package = "llm_rag_faq"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Strict layered architecture"
+type = "layers"
+layers = [
+    "llm_rag_faq.cli",
+    "llm_rag_faq.rag",
+    "llm_rag_faq.data | llm_rag_faq.retrieval | llm_rag_faq.llm",
+    "llm_rag_faq.config",
+]
+
+[[tool.importlinter.contracts]]
+name = "Peer infrastructure layers remain independent"
+type = "independence"
+modules = [
+    "llm_rag_faq.data",
+    "llm_rag_faq.retrieval",
+    "llm_rag_faq.llm",
+]
+
+[[tool.importlinter.contracts]]
+name = "RAG orchestration must not import raw infrastructure SDKs"
+type = "forbidden"
+source_modules = ["llm_rag_faq.rag"]
+forbidden_modules = [
+    "requests",
+    "minsearch",
+    "fastembed",
+    "llama_cpp",
+    "anthropic",
+    "huggingface_hub",
+]
+allow_indirect_imports = true
