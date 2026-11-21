@@ -1,0 +1,14 @@
+# Exclude large caches, model weights, lockfiles, and secrets from AI indexers
+.cache/
+.venv/
+.env
+*.gguf
+uv.lock
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+__pycache__/
+dist/
+build/
+*.egg-info/
