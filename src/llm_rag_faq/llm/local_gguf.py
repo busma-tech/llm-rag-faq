@@ -159,9 +159,7 @@ class LocalGGUFClient:
             FileNotFoundError: If ``model_path`` does not exist.
         """
         if n_ctx <= TEMPLATE_OVERHEAD_TOKENS:
-            raise ValueError(
-                f"n_ctx must be > {TEMPLATE_OVERHEAD_TOKENS}, got {n_ctx}"
-            )
+            raise ValueError(f"n_ctx must be > {TEMPLATE_OVERHEAD_TOKENS}, got {n_ctx}")
         if n_batch <= 0:
             raise ValueError(f"n_batch must be > 0, got {n_batch}")
         threads = _default_threads() if n_threads is None else n_threads
@@ -240,9 +238,7 @@ class LocalGGUFClient:
         if not isinstance(prompt, str):
             raise TypeError(f"prompt must be a str, got {type(prompt).__name__}")
         if system is not None and not isinstance(system, str):
-            raise TypeError(
-                f"system must be a str or None, got {type(system).__name__}"
-            )
+            raise TypeError(f"system must be a str or None, got {type(system).__name__}")
 
         system_clean = (system or "").strip()
         prompt_clean = prompt.strip()
@@ -277,9 +273,7 @@ class LocalGGUFClient:
             prompt_clean = detokenized.decode("utf-8", errors="ignore").strip()
 
         if self.merge_system_into_user:
-            combined = (
-                f"{system_clean}\n\n{prompt_clean}" if system_clean else prompt_clean
-            )
+            combined = f"{system_clean}\n\n{prompt_clean}" if system_clean else prompt_clean
             return [{"role": "user", "content": combined}]
 
         messages: list[dict[str, str]] = []
@@ -394,9 +388,7 @@ class LocalGGUFClient:
         if not isinstance(prompt, str):
             raise TypeError(f"prompt must be a str, got {type(prompt).__name__}")
         if system is not None and not isinstance(system, str):
-            raise TypeError(
-                f"system must be a str or None, got {type(system).__name__}"
-            )
+            raise TypeError(f"system must be a str or None, got {type(system).__name__}")
         with self._lock:
             self._ensure_open()
 

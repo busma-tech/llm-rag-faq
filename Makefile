@@ -1,4 +1,4 @@
-.PHONY: check lint format typecheck arch test
+.PHONY: check lint format typecheck arch test api ui ui-build
 
 lint:
 	uv run ruff check src tests
@@ -19,3 +19,12 @@ test:
 	uv run pytest -v
 
 check: lint typecheck arch test
+
+api:
+	uv run llm-rag-faq-api --reload
+
+ui:
+	npm --prefix frontend run dev
+
+ui-build:
+	npm --prefix frontend run build

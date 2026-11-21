@@ -25,10 +25,14 @@ Built as a layered, modular Python package (`src/` layout) with strict one-way d
 
 ```mermaid
 flowchart TB
-    cli["cli.py (Entrypoint)"] --> rag["rag/ (Orchestration & Prompts)"]
+    cli["cli.py (CLI Entrypoint)"] --> rag["rag/ (Orchestration & Prompts)"]
     cli --> data["data/ (FAQ HTTP Loader)"]
     cli --> retrieval["retrieval/ (Hybrid Search)"]
     cli --> llm["llm/ (Local GGUF & Anthropic)"]
+    api["api/ (FastAPI + Pydantic)"] --> rag
+    api --> data
+    api --> retrieval
+    api --> llm
     rag --> llm
     rag -.->|"SearchIndex Protocol only"| retrieval
     data --> config["config.py (Pure Constants)"]
@@ -40,11 +44,12 @@ flowchart TB
 | Layer | Allowed Internal Imports | Forbidden / Isolated |
 |---|---|---|
 | `config` | *(none)* | Any `llm_rag_faq.*` module |
-| `data` | `config` | `retrieval`, `llm`, `rag`, `cli`, `__init__` |
-| `retrieval` | `config` | `data`, `llm`, `rag`, `cli`, `__init__` |
-| `llm` | `config` | `data`, `retrieval`, `rag`, `cli`, `__init__` |
-| `rag` | `config`, `llm` | `data`, `cli`, `__init__`, and raw SDKs (`requests`, `minsearch`, `fastembed`, `llama_cpp`, `anthropic`, `huggingface_hub`) |
-| `cli` | `config`, `data`, `retrieval`, `llm`, `rag` | `__init__` (avoids facade cycle) |
+| `data` | `config` | `retrieval`, `llm`, `rag`, `cli`, `api`, `__init__` |
+| `retrieval` | `config` | `data`, `llm`, `rag`, `cli`, `api`, `__init__` |
+| `llm` | `config` | `data`, `retrieval`, `rag`, `cli`, `api`, `__init__` |
+| `rag` | `config`, `llm` | `data`, `cli`, `api`, `__init__`, and raw SDKs (`requests`, `minsearch`, `fastembed`, `llama_cpp`, `anthropic`, `huggingface_hub`) |
+| `cli` | `config`, `data`, `retrieval`, `llm`, `rag` | `api`, `__init__` (avoids facade cycle) |
+| `api` | `config`, `data`, `retrieval`, `llm`, `rag` | `cli`, `__init__` (avoids facade cycle) |
 | `__init__` | `data`, `retrieval`, `llm`, `rag` | Exposes the 7-symbol public facade |
 
 ### Repository Tree
@@ -54,7 +59,7 @@ llm-rag-faq/
 ├── .env.example                    # ANTHROPIC_API_KEY=, HF_TOKEN= (no secrets)
 ├── .gitignore
 ├── .python-version                 # 3.12
-├── Makefile                        # lint, format, typecheck, arch, test, check
+├── Makefile                        # lint, format, typecheck, arch, test, check, api, ui, ui-build
 ├── README.md
 ├── pyproject.toml                  # PEP 621 config, ruff, mypy, pytest, import-linter
 ├── uv.lock
@@ -63,6 +68,13 @@ llm-rag-faq/
 │   ├── code-review-notes.md
 │   ├── notebook-usage-guide.md
 │   └── system-architecture.md
+├── frontend/                       # Vite + React + TypeScript + MUI chat UI
+│   ├── package.json
+│   ├── vite.config.ts              # Dev proxy /api -> http://127.0.0.1:8000
+│   └── src/
+│       ├── api/client.ts           # Typed /api/health, /api/courses, /api/chat client
+│       ├── components/             # HeaderBar, MessageBubble, SourcesAccordion, ChatInput
+│       └── types/chat.ts
 ├── notebooks/
 │   ├── 01_rag_exploration.ipynb    # Initial exploratory RAG notebook
 │   └── 02_hybrid_rag_demo.ipynb    # End-to-end hybrid RAG demo via llm_rag_faq facade
@@ -70,6 +82,12 @@ llm-rag-faq/
 │   ├── __init__.py                 # 7-symbol public facade (__all__)
 │   ├── config.py                   # Centralized constants and defaults
 │   ├── cli.py                      # One-shot & interactive REPL CLI
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── app.py                  # FastAPI app factory, lifespan, CORS, static SPA serving
+│   │   ├── schemas.py              # Pydantic v2 request/response models
+│   │   ├── server.py               # Uvicorn CLI entrypoint (`llm-rag-faq-api`)
+│   │   └── service.py              # Thread-safe FAQChatService & APISettings
 │   ├── data/
 │   │   ├── __init__.py
 │   │   └── faq_loader.py           # DataTalks.Club HTTP fetching & JSON disk cache
@@ -88,6 +106,7 @@ llm-rag-faq/
 └── tests/
     ├── __init__.py
     ├── conftest.py                 # Offline test doubles (FakeEmbedder, FakeLlama, FakeAnthropic)
+    ├── test_api.py                 # Offline FastAPI + Pydantic endpoint & lifespan tests
     ├── test_architecture.py        # Zero-dependency AST cycle/layer/SDK/facade checks
     ├── data/test_faq_loader.py
     ├── retrieval/test_hybrid.py
@@ -153,7 +172,24 @@ uv run llm-rag-faq --provider local --course all "How do certificates work?"
 | `--no-fallback` | `False` | Disable the single-retry query-rewrite fallback. |
 | `--local-files-only` | `False` | Disallow network downloads when resolving the local GGUF model. |
 
-### 4. Python Public Facade
+### 4. Web Chat UI & FastAPI Server (`uv run llm-rag-faq-api`)
+
+Run the FastAPI backend (`GET /api/health`, `GET /api/courses`, `POST /api/chat`) alongside the Material UI (MUI) chat frontend:
+
+```bash
+# Install frontend dependencies once
+npm --prefix frontend install
+
+# Option A: Build UI once and serve UI + API from FastAPI at http://127.0.0.1:8000
+make ui-build
+uv run llm-rag-faq-api
+
+# Option B: Live-reload dev servers (FastAPI :8000 + Vite :5173)
+make api
+make ui
+```
+
+### 5. Python Public Facade
 
 The package root exports seven public symbols in `llm_rag_faq.__all__`: `AnthropicClient`, `HybridFAQSearch`, `LocalGGUFClient`, `RAGBase`, `RAGResult`, `build_index`, and `load_faq_data`.
 
@@ -168,7 +204,7 @@ with RAGBase(index=index, llm_client=None, course="llm-zoomcamp") as assistant:
     print(result.answer)
 ```
 
-### 5. Jupyter Notebooks
+### 6. Jupyter Notebooks
 
 - [notebooks/01_rag_exploration.ipynb](notebooks/01_rag_exploration.ipynb) — Initial exploratory RAG notebook using `requests`, `minsearch`, and Anthropic.
 - [notebooks/02_hybrid_rag_demo.ipynb](notebooks/02_hybrid_rag_demo.ipynb) — End-to-end hybrid RAG demo importing from the `llm_rag_faq` facade and sharing the repo-root cache via `CACHE_DIR = "../.cache"`.

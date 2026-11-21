@@ -9,10 +9,13 @@ authors = [
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "anthropic>=2.10.0",
+    "fastapi>=0.115.0",
     "jupyter>=1.1.1",
     "minsearch>=0.2.0",
+    "pydantic>=2.9.0",
     "python-dotenv>=1.2.4",
     "requests>=2.34.2",
+    "uvicorn[standard]>=0.32.0",
     "llama-cpp-python",
     "huggingface-hub",
     "fastembed",
@@ -21,6 +24,7 @@ dependencies = [
 
 [project.scripts]
 llm-rag-faq = "llm_rag_faq.cli:main"
+llm-rag-faq-api = "llm_rag_faq.api.server:main"
 
 [build-system]
 requires = ["uv_build>=0.13.9,<0.14.0"]
@@ -36,6 +40,7 @@ llama-cpp-python = { index = "llama-cpp-cpu" }
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27.0",
     "pytest>=8.0",
     "ruff>=0.9",
     "mypy>=1.14",
@@ -73,7 +78,7 @@ include_external_packages = true
 name = "Strict layered architecture"
 type = "layers"
 layers = [
-    "llm_rag_faq.cli",
+    "llm_rag_faq.cli | llm_rag_faq.api",
     "llm_rag_faq.rag",
     "llm_rag_faq.data | llm_rag_faq.retrieval | llm_rag_faq.llm",
     "llm_rag_faq.config",

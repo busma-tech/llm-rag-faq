@@ -75,8 +75,9 @@ class TestValidateCourseSlug(unittest.TestCase):
     def test_rejects_traversal_and_separators(self) -> None:
         bad_slugs = ["../etc/passwd", "a/b", "a\\b", "foo..bar", "bad\x00slug"]
         for slug in bad_slugs:
-            with self.subTest(slug=slug), self.assertRaisesRegex(
-                ValueError, "path traversal is not allowed"
+            with (
+                self.subTest(slug=slug),
+                self.assertRaisesRegex(ValueError, "path traversal is not allowed"),
             ):
                 _validate_course_slug(slug)
 
@@ -351,9 +352,7 @@ class TestLoadFaqDataDiskCache(unittest.TestCase):
     def test_non_list_json_in_cache_raises_value_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
-            (cache_dir / "faq_llm-zoomcamp.json").write_text(
-                '{"not": "a list"}', encoding="utf-8"
-            )
+            (cache_dir / "faq_llm-zoomcamp.json").write_text('{"not": "a list"}', encoding="utf-8")
             sess = MagicMock()
             with self.assertRaisesRegex(ValueError, "Expected JSON list"):
                 load_faq_data(course="llm-zoomcamp", session=sess, cache_dir=cache_dir)

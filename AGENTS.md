@@ -21,11 +21,12 @@ Strict one-way layers, machine-enforced by `import-linter` (`pyproject.toml`) an
 | Layer | Allowed Internal Imports | Forbidden |
 |---|---|---|
 | `config` | *(none)* | Any `llm_rag_faq.*` module |
-| `data` | `config` | `retrieval`, `llm`, `rag`, `cli`, root facade |
-| `retrieval` | `config` | `data`, `llm`, `rag`, `cli`, root facade |
-| `llm` | `config` | `data`, `retrieval`, `rag`, `cli`, root facade |
-| `rag` | `config`, `llm` | `data`, `retrieval`, `cli`, root facade, and raw SDKs (`requests`, `minsearch`, `fastembed`, `llama_cpp`, `anthropic`, `huggingface_hub`) |
-| `cli` | `config`, `data`, `retrieval`, `llm`, `rag` | Root facade `llm_rag_faq` (prevents import cycles) |
+| `data` | `config` | `retrieval`, `llm`, `rag`, `cli`, `api`, root facade |
+| `retrieval` | `config` | `data`, `llm`, `rag`, `cli`, `api`, root facade |
+| `llm` | `config` | `data`, `retrieval`, `rag`, `cli`, `api`, root facade |
+| `rag` | `config`, `llm` | `data`, `retrieval`, `cli`, `api`, root facade, and raw SDKs (`requests`, `minsearch`, `fastembed`, `llama_cpp`, `anthropic`, `huggingface_hub`) |
+| `cli` | `config`, `data`, `retrieval`, `llm`, `rag` | `api`, root facade `llm_rag_faq` (prevents import cycles) |
+| `api` | `config`, `data`, `retrieval`, `llm`, `rag` | `cli`, root facade `llm_rag_faq` (prevents import cycles) |
 | `__init__` (facade) | `data`, `retrieval`, `llm`, `rag` | Must export exact sorted 7-symbol `__all__` (`tests/test_architecture.py`) |
 
 - `rag/` interacts with retrieval only via the `SearchIndex` `Protocol` in `src/llm_rag_faq/rag/pipeline.py`.

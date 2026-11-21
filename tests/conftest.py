@@ -128,9 +128,7 @@ class FakeLlama:
         add_bos: bool = True,
         special: bool = False,
     ) -> list[int]:
-        self.tokenize_calls.append(
-            {"text": text, "add_bos": add_bos, "special": special}
-        )
+        self.tokenize_calls.append({"text": text, "add_bos": add_bos, "special": special})
         return list(text)
 
     def detokenize(

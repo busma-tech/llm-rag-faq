@@ -138,19 +138,13 @@ class RAGBase:
         self.prompt_template = prompt_template
         self.course = course
         self.model = model
-        self.boost_dict = (
-            dict(DEFAULT_BOOST) if boost_dict is None else dict(boost_dict)
-        )
+        self.boost_dict = dict(DEFAULT_BOOST) if boost_dict is None else dict(boost_dict)
         self.enable_fallback = enable_fallback
         self.max_query_chars = max_query_chars
 
         is_local = self._is_local_client()
-        default_k = (
-            DEFAULT_LOCAL_NUM_RESULTS if is_local else DEFAULT_CLOUD_NUM_RESULTS
-        )
-        default_max_tok = (
-            DEFAULT_LOCAL_MAX_TOKENS if is_local else DEFAULT_CLOUD_MAX_TOKENS
-        )
+        default_k = DEFAULT_LOCAL_NUM_RESULTS if is_local else DEFAULT_CLOUD_NUM_RESULTS
+        default_max_tok = DEFAULT_LOCAL_MAX_TOKENS if is_local else DEFAULT_CLOUD_MAX_TOKENS
 
         self.num_results = default_k if num_results is None else num_results
         self.max_tokens = default_max_tok if max_tokens is None else max_tokens
@@ -176,9 +170,7 @@ class RAGBase:
         )
 
     def _is_local_client(self) -> bool:
-        return self._has_generate_api() and not isinstance(
-            self.llm_client, AnthropicClient
-        )
+        return self._has_generate_api() and not isinstance(self.llm_client, AnthropicClient)
 
     def _validate_query(self, query: str) -> str:
         if not isinstance(query, str):
@@ -188,8 +180,7 @@ class RAGBase:
             raise ValueError("query must not be empty.")
         if len(clean) > self.max_query_chars:
             raise ValueError(
-                f"query length ({len(clean)}) exceeds max_query_chars "
-                f"({self.max_query_chars})."
+                f"query length ({len(clean)}) exceeds max_query_chars ({self.max_query_chars})."
             )
         return clean
 
@@ -257,9 +248,7 @@ class RAGBase:
             Model text output (empty string if no text blocks were returned).
         """
         effective_system = self.instructions if system is None else system
-        effective_max_tokens = (
-            self.max_tokens if max_tokens is None else max_tokens
-        )
+        effective_max_tokens = self.max_tokens if max_tokens is None else max_tokens
 
         if isinstance(self.llm_client, LLMClient) and callable(
             getattr(self.llm_client, "generate", None)
@@ -290,7 +279,7 @@ class RAGBase:
             system=REWRITE_INSTRUCTIONS,
             max_tokens=DEFAULT_REWRITE_MAX_TOKENS,
         )
-        return rewritten.strip().strip('"\'')
+        return rewritten.strip().strip("\"'")
 
     def rag_with_sources(
         self,

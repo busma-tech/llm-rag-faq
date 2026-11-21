@@ -63,9 +63,7 @@ class _GenericLocalLLM:
         prompt: str,
         max_tokens: int = 512,
     ) -> str:
-        self.calls.append(
-            {"system": system, "prompt": prompt, "max_tokens": max_tokens}
-        )
+        self.calls.append({"system": system, "prompt": prompt, "max_tokens": max_tokens})
         return self.reply
 
 
@@ -108,7 +106,7 @@ class TestRAGBaseInitAndDefaults(unittest.TestCase):
         self.assertIsNone(res.rewritten_query)
         self.assertFalse(res.used_fallback)
         with self.assertRaises(FrozenInstanceError):
-            setattr(res, "answer", "b")
+            setattr(res, "answer", "b")  # noqa: B010
 
     def test_init_validation_and_boost_dict_copy(self) -> None:
         idx = FakeSearchIndex()
@@ -140,17 +138,13 @@ class TestRAGBaseInitAndDefaults(unittest.TestCase):
         self.assertEqual(generic_rag.max_tokens, DEFAULT_LOCAL_MAX_TOKENS)
 
         owned_local = LocalGGUFClient(llm=cast(Any, FakeLlama()))
-        with patch(
-            "llm_rag_faq.rag.pipeline.LocalGGUFClient", return_value=owned_local
-        ):
+        with patch("llm_rag_faq.rag.pipeline.LocalGGUFClient", return_value=owned_local):
             none_rag = RAGBase(idx, llm_client=None)
         self.assertEqual(none_rag.num_results, DEFAULT_LOCAL_NUM_RESULTS)
         self.assertEqual(none_rag.max_tokens, DEFAULT_LOCAL_MAX_TOKENS)
         none_rag.close()
 
-        cloud_adapter_rag = RAGBase(
-            idx, llm_client=AnthropicClient(client=FakeAnthropic())
-        )
+        cloud_adapter_rag = RAGBase(idx, llm_client=AnthropicClient(client=FakeAnthropic()))
         self.assertEqual(cloud_adapter_rag.num_results, DEFAULT_CLOUD_NUM_RESULTS)
         self.assertEqual(cloud_adapter_rag.max_tokens, DEFAULT_CLOUD_MAX_TOKENS)
 
@@ -166,9 +160,7 @@ class TestRAGBaseInitAndDefaults(unittest.TestCase):
         self.assertEqual(real_sdk_rag.num_results, DEFAULT_CLOUD_NUM_RESULTS)
         self.assertEqual(real_sdk_rag.max_tokens, DEFAULT_CLOUD_MAX_TOKENS)
 
-        override_rag = RAGBase(
-            idx, llm_client=raw_fake, num_results=7, max_tokens=256
-        )
+        override_rag = RAGBase(idx, llm_client=raw_fake, num_results=7, max_tokens=256)
         self.assertEqual(override_rag.num_results, 7)
         self.assertEqual(override_rag.max_tokens, 256)
 
@@ -183,9 +175,7 @@ class TestRAGBaseSearchFormattingAndQueryValidation(unittest.TestCase):
         idx_course = FakeSearchIndex()
         rag_course = RAGBase(idx_course, llm_client=_GenericLocalLLM())
         rag_course.search("docker")
-        self.assertEqual(
-            idx_course.calls[-1]["filter_dict"], {"course": DEFAULT_COURSE}
-        )
+        self.assertEqual(idx_course.calls[-1]["filter_dict"], {"course": DEFAULT_COURSE})
 
     def test_validate_query_rejects_invalid_inputs(self) -> None:
         rag = RAGBase(
@@ -281,9 +271,7 @@ class TestRAGBasePipelineFallbackAndClients(unittest.TestCase):
         doc2 = SAMPLE_FAQ_DOCS[1]
         for idk_text in ("Sorry, I don't know.", "I do not know"):
             with self.subTest(idk_text=idk_text):
-                fake = FakeLlama(
-                    responses=[idk_text, "docker volume", "Mount ollama volume."]
-                )
+                fake = FakeLlama(responses=[idk_text, "docker volume", "Mount ollama volume."])
                 rag = RAGBase(
                     FakeSearchIndex(batches=[[doc1], [doc2]]),
                     llm_client=LocalGGUFClient(llm=cast(Any, fake)),
@@ -293,9 +281,7 @@ class TestRAGBasePipelineFallbackAndClients(unittest.TestCase):
                 self.assertEqual(len(fake.calls), 3)
                 self.assertEqual(res.answer, "Mount ollama volume.")
 
-        fake_qual = FakeLlama(
-            responses=["I don't know the exact date, but modules open weekly."]
-        )
+        fake_qual = FakeLlama(responses=["I don't know the exact date, but modules open weekly."])
         rag_qual = RAGBase(
             FakeSearchIndex(batches=[[doc1]]),
             llm_client=LocalGGUFClient(llm=cast(Any, fake_qual)),
@@ -356,9 +342,7 @@ class TestRAGBasePipelineFallbackAndClients(unittest.TestCase):
                 self.assertEqual(len(idx.calls), 1)
                 self.assertEqual(len(fake.calls), 2)
                 self.assertTrue(res.used_fallback)
-                self.assertEqual(
-                    res.rewritten_query, degenerate or None
-                )
+                self.assertEqual(res.rewritten_query, degenerate or None)
 
     def test_raw_anthropic_client_compatibility_and_real_sdk_mock(self) -> None:
         raw_fake = FakeAnthropic(responses=["Cloud answer"])
@@ -385,9 +369,7 @@ class TestRAGBasePipelineFallbackAndClients(unittest.TestCase):
         with patch.object(
             real_sdk.messages,
             "create",
-            return_value=SimpleNamespace(
-                content=[SimpleNamespace(type="text", text="SDK answer")]
-            ),
+            return_value=SimpleNamespace(content=[SimpleNamespace(type="text", text="SDK answer")]),
         ):
             rag_sdk = RAGBase(
                 FakeSearchIndex(batches=[[SAMPLE_FAQ_DOCS[0]]]),
@@ -459,9 +441,7 @@ class TestCLI(unittest.TestCase):
             ),
             patch(
                 "llm_rag_faq.cli.build_index",
-                side_effect=lambda docs, **kw: HybridFAQSearch(
-                    docs, embedder=FakeEmbedder()
-                ),
+                side_effect=lambda docs, **kw: HybridFAQSearch(docs, embedder=FakeEmbedder()),
             ),
             patch(
                 "llm_rag_faq.cli.LocalGGUFClient",
@@ -469,9 +449,7 @@ class TestCLI(unittest.TestCase):
             ) as mock_gguf_cls,
             contextlib.redirect_stdout(stdout),
         ):
-            rc = main(
-                ["--cache-dir", tmp, "--local-files-only", "How do I run Docker?"]
-            )
+            rc = main(["--cache-dir", tmp, "--local-files-only", "How do I run Docker?"])
 
         self.assertEqual(rc, 0)
         self.assertEqual(mock_gguf_cls.call_args.kwargs["local_files_only"], True)
@@ -531,9 +509,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(out_no_fb.getvalue().strip(), "I don't know.")
 
         # Default (fallback enabled) prints fallback rewritten query
-        fake_fb = FakeLlama(
-            responses=["I don't know.", "docker setup", "Install Docker Desktop."]
-        )
+        fake_fb = FakeLlama(responses=["I don't know.", "docker setup", "Install Docker Desktop."])
         out_fb = io.StringIO()
         with (
             patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}, clear=False),
@@ -541,9 +517,7 @@ class TestCLI(unittest.TestCase):
             patch("llm_rag_faq.cli.load_faq_data", return_value=list(SAMPLE_FAQ_DOCS)),
             patch(
                 "llm_rag_faq.cli.build_index",
-                return_value=FakeSearchIndex(
-                    batches=[[SAMPLE_FAQ_DOCS[0]], [SAMPLE_FAQ_DOCS[4]]]
-                ),
+                return_value=FakeSearchIndex(batches=[[SAMPLE_FAQ_DOCS[0]], [SAMPLE_FAQ_DOCS[4]]]),
             ),
             patch(
                 "llm_rag_faq.cli.LocalGGUFClient",
@@ -588,9 +562,7 @@ class TestCLI(unittest.TestCase):
         ):
             rc_ok = main(["--provider", "anthropic", "What is RAG?"])
         self.assertEqual(rc_ok, 0)
-        mock_anth_cls.assert_called_once_with(
-            model=DEFAULT_CLOUD_MODEL, api_key="test-key"
-        )
+        mock_anth_cls.assert_called_once_with(model=DEFAULT_CLOUD_MODEL, api_key="test-key")
         close_spy.assert_called_once_with()
         self.assertIn("Cloud reply.", stdout.getvalue())
 

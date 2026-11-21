@@ -75,9 +75,7 @@ class AnthropicClient:
         if not isinstance(prompt, str):
             raise TypeError(f"prompt must be a str, got {type(prompt).__name__}")
         if system is not None and not isinstance(system, str):
-            raise TypeError(
-                f"system must be a str or None, got {type(system).__name__}"
-            )
+            raise TypeError(f"system must be a str or None, got {type(system).__name__}")
         if max_tokens <= 0:
             raise ValueError(f"max_tokens must be > 0, got {max_tokens}")
 

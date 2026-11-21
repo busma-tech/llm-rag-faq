@@ -27,9 +27,7 @@ def _resolve_course_url(path: str, prefix: str = URL_PREFIX) -> str:
 def _validate_course_slug(course: str) -> str:
     """Validate that a course slug cannot escape the cache directory."""
     if "/" in course or "\\" in course or ".." in course or "\x00" in course:
-        raise ValueError(
-            f"Invalid course slug {course!r}: path traversal is not allowed"
-        )
+        raise ValueError(f"Invalid course slug {course!r}: path traversal is not allowed")
     return course
 
 
@@ -72,15 +70,12 @@ def load_faq_data(
         slug = course if course is not None else "all"
         cache_file = cache_path / f"faq_{slug}.json"
         if cache_file.resolve().parent != cache_path.resolve():
-            raise ValueError(
-                f"Invalid course slug {course!r}: resolves outside cache directory"
-            )
+            raise ValueError(f"Invalid course slug {course!r}: resolves outside cache directory")
         if cache_file.exists():
             cached: Any = json.loads(cache_file.read_text(encoding="utf-8"))
             if not isinstance(cached, list):
                 raise ValueError(
-                    f"Expected JSON list in cache file {cache_file}, "
-                    f"got {type(cached).__name__}"
+                    f"Expected JSON list in cache file {cache_file}, got {type(cached).__name__}"
                 )
             return list(cached)
 
@@ -96,20 +91,14 @@ def load_faq_data(
         else:
             selected = [c for c in courses_raw if c.get("course") == course]
             if not selected:
-                available = sorted(
-                    c["course"] for c in courses_raw if "course" in c
-                )
-                raise ValueError(
-                    f"Unknown course {course!r}. Available courses: {available}"
-                )
+                available = sorted(c["course"] for c in courses_raw if "course" in c)
+                raise ValueError(f"Unknown course {course!r}. Available courses: {available}")
 
         documents: list[dict[str, Any]] = []
         for entry in selected:
             path = entry.get("path")
             if not path:
-                raise KeyError(
-                    f"Course catalog entry is missing 'path': {entry!r}"
-                )
+                raise KeyError(f"Course catalog entry is missing 'path': {entry!r}")
             course_url = _resolve_course_url(path)
             course_response = http.get(course_url, timeout=timeout)
             course_response.raise_for_status()

@@ -28,9 +28,7 @@ from tests.conftest import SAMPLE_FAQ_DOCS, FakeEmbedder
 class _UniformEmbedder:
     """Embedder returning identical vectors so lexical boosting breaks ties."""
 
-    def passage_embed(
-        self, texts: Iterable[str], **kwargs: Any
-    ) -> Iterable[NDArray[np.float32]]:
+    def passage_embed(self, texts: Iterable[str], **kwargs: Any) -> Iterable[NDArray[np.float32]]:
         del kwargs
         return [np.array([1.0, 0.0], dtype=np.float32) for _ in texts]
 
@@ -56,13 +54,9 @@ class TestRetrievalHelpers(unittest.TestCase):
         np.testing.assert_allclose(zero_1d, np.array([0.0, 0.0], dtype=np.float32))
         self.assertFalse(np.isnan(zero_1d).any())
 
-        norm_2d = _l2_normalize(
-            np.array([[3.0, 4.0], [0.0, 0.0]], dtype=np.float32)
-        )
+        norm_2d = _l2_normalize(np.array([[3.0, 4.0], [0.0, 0.0]], dtype=np.float32))
         self.assertEqual(norm_2d.dtype, np.float32)
-        np.testing.assert_allclose(
-            norm_2d, np.array([[0.6, 0.8], [0.0, 0.0]], dtype=np.float32)
-        )
+        np.testing.assert_allclose(norm_2d, np.array([[0.6, 0.8], [0.0, 0.0]], dtype=np.float32))
 
         empty = _l2_normalize(np.empty((0, 0), dtype=np.float32))
         self.assertEqual(empty.shape, (0, 0))
@@ -90,15 +84,9 @@ class TestRetrievalHelpers(unittest.TestCase):
         self.assertFalse(_matches_filter(doc_llm, {"course": ""}))
 
         self.assertTrue(
-            _matches_filter(
-                doc_llm, {"course": "llm-zoomcamp", "section": ["S1", "S2"]}
-            )
+            _matches_filter(doc_llm, {"course": "llm-zoomcamp", "section": ["S1", "S2"]})
         )
-        self.assertFalse(
-            _matches_filter(
-                doc_llm, {"course": "llm-zoomcamp", "section": "Other"}
-            )
-        )
+        self.assertFalse(_matches_filter(doc_llm, {"course": "llm-zoomcamp", "section": "Other"}))
 
     def test_rrf_fuse_1_based_scoring_and_limit(self) -> None:
         # With k=60: doc 20 gets 1/62 + 1/61, doc 10 gets 1/61, doc 30 gets 1/62
@@ -125,9 +113,7 @@ class TestHybridFAQSearchConstructionAndEmptyCorpus(unittest.TestCase):
         )
         self.assertEqual(len(idx_all.documents), len(SAMPLE_FAQ_DOCS))
 
-        idx_llm = HybridFAQSearch(
-            SAMPLE_FAQ_DOCS, course="llm-zoomcamp", embedder=FakeEmbedder()
-        )
+        idx_llm = HybridFAQSearch(SAMPLE_FAQ_DOCS, course="llm-zoomcamp", embedder=FakeEmbedder())
         self.assertEqual(len(idx_llm.documents), 4)
         self.assertTrue(all(d["course"] == "llm-zoomcamp" for d in idx_llm.documents))
 
@@ -194,12 +180,8 @@ class TestHybridFAQSearchQueryAndFiltering(unittest.TestCase):
         idx = HybridFAQSearch(docs, embedder=FakeEmbedder())
 
         with (
-            patch.object(
-                idx.lexical_index, "search", wraps=idx.lexical_index.search
-            ) as lex_spy,
-            patch.object(
-                idx, "_semantic_search", wraps=idx._semantic_search
-            ) as sem_spy,
+            patch.object(idx.lexical_index, "search", wraps=idx.lexical_index.search) as lex_spy,
+            patch.object(idx, "_semantic_search", wraps=idx._semantic_search) as sem_spy,
         ):
             res12 = idx.search("docker", num_results=12)
             self.assertEqual(len(res12), 12)
@@ -208,12 +190,8 @@ class TestHybridFAQSearchQueryAndFiltering(unittest.TestCase):
 
             res3 = idx.search("docker", num_results=3)
             self.assertEqual(len(res3), 3)
-            self.assertEqual(
-                lex_spy.call_args.kwargs["num_results"], DEFAULT_MIN_CANDIDATES
-            )
-            self.assertEqual(
-                sem_spy.call_args.kwargs["num_results"], DEFAULT_MIN_CANDIDATES
-            )
+            self.assertEqual(lex_spy.call_args.kwargs["num_results"], DEFAULT_MIN_CANDIDATES)
+            self.assertEqual(sem_spy.call_args.kwargs["num_results"], DEFAULT_MIN_CANDIDATES)
 
             res_custom = idx.search("docker", num_results=3, candidate_k=7)
             self.assertEqual(len(res_custom), 3)
@@ -250,9 +228,7 @@ class TestHybridFAQSearchQueryAndFiltering(unittest.TestCase):
             [d["id"] for d in idx.search("docker", filter_dict={"course": "ml-zoomcamp"})],
             ["ml"],
         )
-        multi_list = idx.search(
-            "docker", filter_dict={"course": ["llm-zoomcamp", "ml-zoomcamp"]}
-        )
+        multi_list = idx.search("docker", filter_dict={"course": ["llm-zoomcamp", "ml-zoomcamp"]})
         self.assertEqual({d["id"] for d in multi_list}, {"llm", "ml"})
 
         self.assertEqual(
@@ -304,9 +280,7 @@ class TestHybridFAQSearchQueryAndFiltering(unittest.TestCase):
         idx = HybridFAQSearch(docs, embedder=_UniformEmbedder())
         baseline_boost = dict(DEFAULT_BOOST)
 
-        with patch.object(
-            idx.lexical_index, "search", wraps=idx.lexical_index.search
-        ) as lex_spy:
+        with patch.object(idx.lexical_index, "search", wraps=idx.lexical_index.search) as lex_spy:
             res_default = idx.search("zephyr", boost_dict=None)
             self.assertEqual(lex_spy.call_args.kwargs["boost_dict"], DEFAULT_BOOST)
             self.assertEqual(res_default[0]["id"], "q-match")
@@ -363,30 +337,22 @@ class TestHybridFAQSearchVectorCaching(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp) / "vec_cache"
             emb1 = FakeEmbedder(dim=4, scale=2.0)
-            idx1 = HybridFAQSearch(
-                SAMPLE_FAQ_DOCS, cache_dir=cache_dir, embedder=emb1
-            )
+            idx1 = HybridFAQSearch(SAMPLE_FAQ_DOCS, cache_dir=cache_dir, embedder=emb1)
             self.assertEqual(len(emb1.passage_calls), 1)
             npy_files = list(cache_dir.glob("embeddings_*.npy"))
             self.assertEqual(len(npy_files), 1)
 
             emb2 = FakeEmbedder(dim=4, scale=2.0)
-            idx2 = HybridFAQSearch(
-                SAMPLE_FAQ_DOCS, cache_dir=cache_dir, embedder=emb2
-            )
+            idx2 = HybridFAQSearch(SAMPLE_FAQ_DOCS, cache_dir=cache_dir, embedder=emb2)
             self.assertEqual(emb2.passage_calls, [])
             self.assertEqual(idx2.doc_vectors.dtype, np.float32)
-            np.testing.assert_allclose(
-                idx2.doc_vectors, idx1.doc_vectors, rtol=1e-6, atol=1e-6
-            )
+            np.testing.assert_allclose(idx2.doc_vectors, idx1.doc_vectors, rtol=1e-6, atol=1e-6)
 
     def test_npy_cache_hit_normalizes_unnormalized_cached_vectors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
             model_name = "test-model"
-            cache_file = self._expected_cache_file(
-                cache_dir, SAMPLE_FAQ_DOCS, model_name
-            )
+            cache_file = self._expected_cache_file(cache_dir, SAMPLE_FAQ_DOCS, model_name)
             unnorm = np.tile(
                 np.array([[3.0, 4.0, 0.0, 0.0]], dtype=np.float32),
                 (len(SAMPLE_FAQ_DOCS), 1),
@@ -408,9 +374,7 @@ class TestHybridFAQSearchVectorCaching(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
             model_name = "test-model"
-            cache_file = self._expected_cache_file(
-                cache_dir, SAMPLE_FAQ_DOCS, model_name
-            )
+            cache_file = self._expected_cache_file(cache_dir, SAMPLE_FAQ_DOCS, model_name)
             obj_arr = np.array([{"bad": 1}] * len(SAMPLE_FAQ_DOCS), dtype=object)
             np.save(cache_file, obj_arr, allow_pickle=True)
 
@@ -427,9 +391,7 @@ class TestHybridFAQSearchVectorCaching(unittest.TestCase):
             with self.subTest(bad_shape=bad_shape), tempfile.TemporaryDirectory() as tmp:
                 cache_dir = Path(tmp)
                 model_name = "test-model"
-                cache_file = self._expected_cache_file(
-                    cache_dir, SAMPLE_FAQ_DOCS, model_name
-                )
+                cache_file = self._expected_cache_file(cache_dir, SAMPLE_FAQ_DOCS, model_name)
                 np.save(cache_file, np.ones(bad_shape, dtype=np.float32))
 
                 emb = FakeEmbedder(dim=4)
@@ -448,9 +410,7 @@ class TestHybridFAQSearchVectorCaching(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
             model_name = "test-model"
-            cache_file = self._expected_cache_file(
-                cache_dir, SAMPLE_FAQ_DOCS, model_name
-            )
+            cache_file = self._expected_cache_file(cache_dir, SAMPLE_FAQ_DOCS, model_name)
             cache_file.write_bytes(b"not a valid npy payload")
 
             with self.assertRaises((ValueError, OSError)):

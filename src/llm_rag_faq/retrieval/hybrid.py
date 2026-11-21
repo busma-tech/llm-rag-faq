@@ -177,9 +177,7 @@ class HybridFAQSearch:
             for text in texts:
                 digest.update(b"\0")
                 digest.update(text.encode("utf-8"))
-            cache_file = (
-                Path(cache_dir) / f"embeddings_{digest.hexdigest()[:16]}.npy"
-            )
+            cache_file = Path(cache_dir) / f"embeddings_{digest.hexdigest()[:16]}.npy"
             if cache_file.exists():
                 cached = np.load(cache_file, allow_pickle=False)
                 if (
@@ -266,14 +264,10 @@ class HybridFAQSearch:
         if num_results == 0 or not self.documents:
             return []
 
-        effective_boost = (
-            dict(DEFAULT_BOOST) if boost_dict is None else boost_dict
-        )
+        effective_boost = dict(DEFAULT_BOOST) if boost_dict is None else boost_dict
         effective_filter = {} if filter_dict is None else filter_dict
         k_candidates = (
-            candidate_k
-            if candidate_k is not None
-            else max(num_results * 2, DEFAULT_MIN_CANDIDATES)
+            candidate_k if candidate_k is not None else max(num_results * 2, DEFAULT_MIN_CANDIDATES)
         )
 
         # Lexical candidates (keyed by canonical document index via output_ids=True)

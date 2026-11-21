@@ -29,6 +29,7 @@ ALLOWED_LAYER_IMPORTS: dict[str, frozenset[str]] = {
     "llm": frozenset({"config", "llm"}),
     "rag": frozenset({"config", "llm", "rag"}),
     "cli": frozenset({"config", "data", "retrieval", "llm", "rag"}),
+    "api": frozenset({"config", "data", "retrieval", "llm", "rag", "api"}),
     "facade": frozenset({"config", "data", "retrieval", "llm", "rag"}),
 }
 
@@ -83,7 +84,7 @@ def _layer_of(mod_name: str, package_name: str = "llm_rag_faq") -> str | None:
         return "config"
     if mod_name == f"{package_name}.cli":
         return "cli"
-    for layer in ("data", "retrieval", "llm", "rag"):
+    for layer in ("data", "retrieval", "llm", "rag", "api"):
         prefix = f"{package_name}.{layer}"
         if mod_name == prefix or mod_name.startswith(f"{prefix}."):
             return layer
@@ -327,9 +328,7 @@ def check_rag_sdk_isolation(
     """Assert the ``rag`` layer does not directly import raw infrastructure SDKs."""
     leaks = find_rag_sdk_leaks(src_root, package_name=package_name)
     if leaks:
-        raise AssertionError(
-            "Forbidden SDK imports in rag layer:\n" + "\n".join(leaks)
-        )
+        raise AssertionError("Forbidden SDK imports in rag layer:\n" + "\n".join(leaks))
 
 
 class TestArchitecture(unittest.TestCase):
@@ -367,23 +366,13 @@ class TestArchitecture(unittest.TestCase):
             (pkg / "rag").mkdir(parents=True)
             (pkg / "data").mkdir(parents=True)
             (pkg / "__init__.py").write_text("", encoding="utf-8")
-            (pkg / "config.py").write_text(
-                "import llm_rag_faq.cli\n", encoding="utf-8"
-            )
-            (pkg / "cli.py").write_text(
-                "from llm_rag_faq import RAGBase\n", encoding="utf-8"
-            )
+            (pkg / "config.py").write_text("import llm_rag_faq.cli\n", encoding="utf-8")
+            (pkg / "cli.py").write_text("from llm_rag_faq import RAGBase\n", encoding="utf-8")
             (pkg / "data" / "__init__.py").write_text("", encoding="utf-8")
-            (pkg / "data" / "a.py").write_text(
-                "from .b import x\n", encoding="utf-8"
-            )
-            (pkg / "data" / "b.py").write_text(
-                "from .a import y\n", encoding="utf-8"
-            )
+            (pkg / "data" / "a.py").write_text("from .b import x\n", encoding="utf-8")
+            (pkg / "data" / "b.py").write_text("from .a import y\n", encoding="utf-8")
             (pkg / "rag" / "__init__.py").write_text("", encoding="utf-8")
-            (pkg / "rag" / "prompts.py").write_text(
-                "import requests\n", encoding="utf-8"
-            )
+            (pkg / "rag" / "prompts.py").write_text("import requests\n", encoding="utf-8")
 
             with self.assertRaisesRegex(AssertionError, "Circular import detected"):
                 check_no_circular_imports(src_root)
